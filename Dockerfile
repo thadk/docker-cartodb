@@ -7,6 +7,7 @@ apt-get install -q -y autoconf binutils-doc bison build-essential flex
 #apt-utils
 RUN apt-get install -q -y apt-utils
 
+
 #ruby-rvm
 RUN apt-get install -q -y ruby-rvm
 
@@ -18,6 +19,12 @@ RUN apt-get install -q -y git
 
 #apt tools
 RUN apt-get install -q -y python-software-properties
+
+#newer gcc
+RUN add-apt-repository ppa:cartodb/gcc && apt-get update
+RUN apt-get install -q -y gcc-4.9 g++-4.9
+ENV CC=/usr/bin/gcc-4.9
+ENV CXX=/usr/bin/g++-4.9
 
 #postgresql
 RUN add-apt-repository ppa:cartodb/postgresql-9.5 && apt-get update
@@ -72,19 +79,29 @@ RUN add-apt-repository ppa:cartodb/redis && apt-get update
 RUN apt-get install -q -y redis-server
 
 #nodejs
-RUN add-apt-repository ppa:cartodb/nodejs-010 && apt-get update &&\
-apt-get install -q -y nodejs
+RUN add-apt-repository ppa:cartodb/nodejs && apt-get update &&\
+apt-get install -q -y nodejs=6.9.2-carto7~precise
+#RUN curl -sL https://deb.nodesource.com/setup_6.x | bash -
+#RUN apt-get install -q -y nodejs
+RUN curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | apt-key add -
+RUN echo "deb http://dl.yarnpkg.com/debian/ stable main" | tee /etc/apt/sources.list.d/yarn.list
+RUN apt-get update && apt-get -q -y install yarn
+
+RUN apt-get install -q -y libpixman-1-0 libpixman-1-dev
+RUN apt-get install -q -y libcairo2-dev libjpeg-dev libgif-dev libpango1.0-dev
+
+
 
 #SQL API
 RUN git clone git://github.com/CartoDB/CartoDB-SQL-API.git &&\
 cd CartoDB-SQL-API &&\
 git checkout master &&\
-npm install 
+yarn install 
 
-#MAPS API:
+#MAPS API (Dec 19, 2016 is 2.87.3):
 RUN git clone git://github.com/CartoDB/Windshaft-cartodb.git &&\
 cd Windshaft-cartodb &&\
-git checkout 2.87.3 &&\
+git checkout 3.9.0 &&\
 apt-get install -q -y libpango1.0-dev &&\
 npm install
 
@@ -112,8 +129,8 @@ wget  -O /tmp/get-pip.py https://bootstrap.pypa.io/get-pip.py &&\
 python /tmp/get-pip.py &&\
 apt-get install -q -y python-all-dev &&\
 apt-get install -q -y imagemagick unp zip &&\
-bundle install &&\
-npm install 
+yarn install 
+#bundle install &&\
 
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
 ENV C_INCLUDE_PATH=/usr/include/gdal
@@ -138,10 +155,9 @@ ENV LC_ALL en_US.UTF-8
 
 
 RUN cd cartodb &&\
-    npm install npm@2.14.9 -g &&\
+    npm install npm@3.10.9 -g &&\
     npm -v &&\
     export PATH=$PATH:$PWD/node_modules/grunt-cli/bin &&\
-    bundle install &&\
     bundle exec grunt --environment production
 
 RUN service postgresql start && service redis-server start &&\
